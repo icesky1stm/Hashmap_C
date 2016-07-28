@@ -1,0 +1,1 @@
+cc -o test_hash test_hash.c -I./ ./libkmaplib.so
