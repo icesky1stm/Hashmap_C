@@ -60,8 +60,6 @@ static void AppLog(char *file, long line, char *level, char *fmtstr, ...)
 {
     va_list ap;
     char   tmpstr[501];
-    char   loglevel[11];
-    FILE   *fp;
 
     memset(tmpstr, 0x0, sizeof(tmpstr));
 
@@ -70,7 +68,7 @@ static void AppLog(char *file, long line, char *level, char *fmtstr, ...)
     vsprintf(tmpstr, fmtstr, ap);
     va_end(ap);
 
-    printf("[%s][%s][%03d]", level, file, line);
+    printf("[%s][%s][%03ld]", level, file, line);
     printf("[%s]\n", tmpstr);
 
     return ;
@@ -96,9 +94,7 @@ static unsigned int XipHash(char * key);
 int XipHashmapPrint( void * hashmap)
 {
     TxipHashmap * map = ( TxipHashmap *)hashmap;
-    HMAPLOG("I", "HashMap:length[%d],size[%d],threshold[%d];分布情况如下:", map->length, map->size, map->threshold);
 
-    int i = 0;
     int idx = 0;
 
     TxipHashmapNode * e = NULL;
@@ -107,6 +103,7 @@ int XipHashmapPrint( void * hashmap)
     /** 打印日志 **/
     if( map != NULL)
     {
+        HMAPLOG("I", "HashMap:length(%d),size(%d),threshold(%d)", map->length, map->size, map->threshold);
         for ( idx = 0; idx < map->length; idx++)
         {
             for( e = map->table[idx]; e != NULL; )
@@ -119,6 +116,7 @@ int XipHashmapPrint( void * hashmap)
     }
     
     /** 打印分布情况图 **/
+    int i = 0;
     if( map != NULL)
     {
         for( idx = 0; idx < map->length; idx++)
@@ -171,11 +169,15 @@ void * XipHashmapInit( int opacity, float factor)
     if( opacity <= 1)
     {
         HMAPLOG("E","初始容量必须大于1!!!");
+        HMAPFREE(map);
+        map = NULL;
         return NULL;
     }
     if( factor < 0.00 || factor > 1.00)
     {
         HMAPLOG("E","加载因子取值区间为[0.00-1.00],但本次加载因子为[%.2f]", factor);
+        HMAPFREE(map);
+        map = NULL;
         return NULL;
     }
 
@@ -183,6 +185,8 @@ void * XipHashmapInit( int opacity, float factor)
     if( map->table == NULL)
     {
         HMAPLOG("E","创建hash值的T表失败!!!");
+        HMAPFREE(map);
+        map = NULL;
         return NULL;
     }
 
@@ -205,9 +209,9 @@ void * XipHashmapInit( int opacity, float factor)
 int XipHashmapDestory( void * hashmap)
 {
     TxipHashmap * map = (TxipHashmap *) hashmap;
-    register unsigned int idx;
     TxipHashmapNode * e = NULL;
     TxipHashmapNode * next = NULL;
+    register unsigned int idx;
 
     /** 释放hashmap node 内存 **/
     if( map != NULL)
@@ -221,11 +225,13 @@ int XipHashmapDestory( void * hashmap)
                 e = next;
             }
         }
+
+
+        /** 释放hashmap的T表 **/
+        HMAPFREE( map->table);
+        map->table = NULL;
     }
 
-    /** 释放hashmap的T表 **/
-    HMAPFREE( map->table);
-    map->table = NULL;
 
     return 0;
 }
