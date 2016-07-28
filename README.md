@@ -48,10 +48,10 @@
 `void * XipHashmapPut( void * in_map, char * key, void * value);`
 
 /*********************************************************************
- * 入口参数: hashmap指针, char * key
- * 出口参数: 无
- * 返回值  : 返回 void * value 的指针
- * 函数功能: 根据key值从hashmap中取得value的指针返回
+ *入口参数: hashmap指针, char * key
+ *出口参数: 无
+ *返回值  : 返回 void * value 的指针
+ *函数功能: 根据key值从hashmap中取得value的指针返回
  *********************************************************************/
 `void * XipHashmapGet( void * TxipHashmap, char * key);`
 
