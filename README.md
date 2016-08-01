@@ -10,6 +10,7 @@
 *          5.删除
 *          6.判断是否存在
 *          7.打印
+
 list实现，支持几种功能:
  *          1.新建
  *          2.销毁
@@ -39,3 +40,4 @@ HashMap_test.c和List_test.c 可以使用mk来编译成可执行程序
     1)增加了list
     2)扩展了printf，支持回调函数自己定义打印格式。
     3)增加了hashmap和list的malloc_flag字段，可以控制是否在map或list中额外分配内存保存value
+    4)在linux下测试,使用valgrind进行了内存泄漏测试，并修正了所有内存泄漏问题。
