@@ -1,3 +1,4 @@
 TARGET = libkmaplib.so
 
-OBJ += HashMap.o
+OBJ += XipHashMap.o
+OBJ += XipList.o

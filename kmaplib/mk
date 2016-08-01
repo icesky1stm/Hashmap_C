@@ -1,1 +1,3 @@
-cc -o test_hash test_hash.c -I./ ./libkmaplib.so
+rm -f HashMap_test List_test
+cc -o HashMap_test HashMap_test.c -I./ ./libkmaplib.so
+cc -o List_test List_test.c -I./ ./libkmaplib.so
