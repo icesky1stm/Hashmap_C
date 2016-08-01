@@ -223,6 +223,16 @@ void * XipListAdd( void * list, void * element, unsigned int size)
         if( rebuild_list(lst) != 0)
         {
             LISTLOG("E","ÖØ½¨list´íÎó!!!");
+            if( lst->malloc_flag == MALLOC_FLAG_NO)
+            {
+                ;
+            }
+            else
+            {
+                LISTFREE(lst->ele_table[lst->length]);
+                lst->ele_table[lst->length] = NULL;
+            }
+
             return NULL; 
         }
     }

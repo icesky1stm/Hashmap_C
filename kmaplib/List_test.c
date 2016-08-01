@@ -4,6 +4,7 @@
 #include <xiplist.h>
 
 void name_printf( void * element);
+
 int main()
 {
     char *name[] = {

@@ -1,7 +1,10 @@
 include OBJS
 
-$(TARGET):$(OBJ)
-	cc -shared -o $@ $<
+$(TARGET):$(OBJ) 
+	cc -rdynamic -s -shared -Wall -o $@ $(OBJ)
+
+.c.o:
+	cc -g -O -c -fPIC  -Wall $<
 
 clean:
 	rm -f *.o

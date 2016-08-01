@@ -202,6 +202,8 @@ void * XipHashmapInit( int opacity, float factor, int malloc_flag)
     if( map->table == NULL)
     {
         HMAPLOG("E","创建hash值的T表失败!!!");
+        HMAPFREE(map->table);
+        map->table = NULL;
         HMAPFREE(map);
         map = NULL;
         return NULL;
@@ -240,18 +242,25 @@ int XipHashmapDestory( void * hashmap)
             for( e = map->table[idx]; e != NULL; )
             {
                 next = e->next;
-                /* 释放node的value空间*/
+                /* 释放node空间*/
                 if( map->malloc_flag == MALLOC_FLAG_NO)
                 {
-                    HMAPFREE(e);
+                    ;
                 }
                 else
                 {
+                    /*释放node的key和value空间*/
+                    HMAPFREE(e->key);
+                    e->key = NULL;
                     HMAPFREE(e->value.ptr);
                     e->value.ptr = NULL;
                 }
+                /*释放node本身*/
+                HMAPFREE(e);
+                e=NULL;
                 e = next;
             }
+            
         }
 
         /** 释放hashmap的T表 **/
@@ -268,7 +277,7 @@ int XipHashmapDestory( void * hashmap)
 }
 
  /********************************************************************
- * 函数名称: XipHashmapDestory
+ * 函数名称: XipHashmapPut
  * 函数功能: 将key和value放入hashmap中，如果key已存在，相当于Set命令
  * 函数作者: icesky
  * 创建日期: 2016.07.28
@@ -300,7 +309,6 @@ void * XipHashmapPut( void * hashmap, char * key, void * value, int size)
         return NULL;
     }
 
-    void * oldvalue = NULL;
     TxipHashmapNode *e = NULL;
     unsigned int hcode = XipHash(key); 
     unsigned int idx = hcode % map->length;
@@ -311,8 +319,7 @@ void * XipHashmapPut( void * hashmap, char * key, void * value, int size)
         /*参考java的hashmap实现,先比较hash,再比较strcmp*/
         if ( hcode == e->hash && (key == e->key || strcmp( key, e->key) == 0))
         {
-            oldvalue = e->value.ptr;
-            if( map->malloc_flag == 1) /*不分配内存*/
+            if( map->malloc_flag == MALLOC_FLAG_NO) /*不分配内存*/
             {
                 e->value.ptr = value;
             }
@@ -330,7 +337,7 @@ void * XipHashmapPut( void * hashmap, char * key, void * value, int size)
                 memcpy( e->value.ptr, value, size);
                 return e->value.ptr;
             }
-            return oldvalue; /*将原value返回给调用者*/
+            return e->value.ptr; /*将原value返回给调用者*/
         }
     }
 
@@ -350,9 +357,26 @@ void * XipHashmapPut( void * hashmap, char * key, void * value, int size)
     /*如果触发临界值，则重建hash表*/
     if( map->size > map->threshold)
     {
+        /*
+        HMAPLOG("D","达到临界值[%d] > [%d]", map->size, map->threshold);
+        */
         if( rebuild_hash(map) != 0)
         {
             HMAPLOG("E","重建hash表错误!!!");
+            if( map->malloc_flag == MALLOC_FLAG_NO)
+            {
+                ;
+            }
+            else
+            {
+                HMAPFREE(map->table[idx]->key);
+                map->table[idx]->key = NULL;
+                HMAPFREE(map->table[idx]->value.ptr);
+                map->table[idx]->value.ptr = NULL;
+            }
+            HMAPFREE(map->table[idx]);
+            map->table[idx] = NULL;
+
             return NULL; /*返回固定值*/
         }
     }
@@ -437,7 +461,7 @@ int XipHashmapExists( void * hashmap, char *key)
 }
 
  /********************************************************************
- * 函数名称: XipHashmapDestory
+ * 函数名称: XipHashmapRemove
  * 函数功能: 删除map中对应的Key和VALUE的节点
  * 函数作者: icesky
  * 创建日期: 2016.07.28
@@ -479,6 +503,8 @@ int  XipHashmapRemove( void * hashmap, char *key)
             }
             else
             {
+                HMAPFREE(e->key);
+                e->key = NULL;
                 HMAPFREE(e->value.ptr);
                 e->value.ptr = NULL;
             }
@@ -545,6 +571,8 @@ static TxipHashmapNode * create_hashmap_node( char * key, void * value, TxipHash
         node->key = hmap_malloc(strlen(key)+1);
         if( node->key == NULL)
         {
+            HMAPFREE(node);
+            node = NULL;
             return NULL;
         }
         memset(node->key, 0x00, strlen(key)+1);
@@ -553,6 +581,11 @@ static TxipHashmapNode * create_hashmap_node( char * key, void * value, TxipHash
         node->value.ptr = hmap_malloc(size);
         if( node->value.ptr == NULL)
         {
+            /*防止异常时内存泄漏*/
+            HMAPFREE(node);
+            node = NULL;
+            HMAPFREE(node->key);
+            node->key = NULL;
             return NULL;
         }
         memset(node->value.ptr, 0x00, size);
@@ -647,8 +680,8 @@ static int rebuild_hash( TxipHashmap * map)
  *********************************************************/
 static unsigned int XipHash(char * key)
 {
-    register uint32_t h = 0;
-    uint32_t seed = 131;    //31 131 1313 13131
+    register unsigned int  h = 0;
+    unsigned int seed = 131;    //31 131 1313 13131
 
     while ( *key != '\0' )
     {
